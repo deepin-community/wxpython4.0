@@ -1,5 +1,240 @@
-template-repository (1.0-1) unstable; urgency=medium
+wxpython4.0 (4.2.1+dfsg-1) unstable; urgency=medium
 
-  * Initial release
+  * Update to new upstream release 4.2.1
+  * Update Standards-Version to 4.6.2
+  * Rules-Requires-Root: no
+  * Add missing BD on python3-pytest-forked to fix tests
 
- -- Tsic404 <liuheng@deepin.org>  Sat, 28 Jan 2023 13:46:49 +0800
+ -- Scott Talbert <swt@techie.net>  Thu, 15 Jun 2023 21:10:58 -0400
+
+wxpython4.0 (4.2.0+dfsg-3) unstable; urgency=medium
+
+  * d/control: update wx3.0-doc Suggests to wx3.2-doc (Closes: #1032867)
+
+ -- Scott Talbert <swt@techie.net>  Wed, 15 Mar 2023 20:27:44 -0400
+
+wxpython4.0 (4.2.0+dfsg-2) unstable; urgency=medium
+
+  * d/control: make sip-tools requirements match python3-sipbuild
+    (Closes: #1031040)
+  * Rebuild for kicad (Closes: #1031785)
+
+ -- Scott Talbert <swt@techie.net>  Thu, 23 Feb 2023 19:34:57 -0500
+
+wxpython4.0 (4.2.0+dfsg-1) unstable; urgency=medium
+
+  * Update d/copyright excluded files for new release
+  * Update to new upstream release 4.2.0
+  * Build with wxWidgets 3.2
+  * Refresh patches for new upstream release
+  * d/rules: update list of tests to skip
+  * d/control: update Standards-Version to 4.6.1
+  * d/copyright: remove superfluous file patterns
+  * Add lintian override for missing js source which isn't missing
+
+ -- Scott Talbert <swt@techie.net>  Tue, 13 Sep 2022 23:38:45 -0400
+
+wxpython4.0 (4.0.7+dfsg-15) unstable; urgency=medium
+
+  * Fix reproducibility after sip 6.6.2 changes
+
+ -- Scott Talbert <swt@techie.net>  Sat, 09 Jul 2022 13:28:36 -0400
+
+wxpython4.0 (4.0.7+dfsg-14) unstable; urgency=medium
+
+  * Fix FTBFS with sip 6.6.2 (Closes: #1011697)
+
+ -- Scott Talbert <swt@techie.net>  Tue, 28 Jun 2022 21:51:29 -0400
+
+wxpython4.0 (4.0.7+dfsg-13) unstable; urgency=medium
+
+  [ Olly Betts ]
+  * debian/control: Remove myself from "Uploaders" as I'm actively
+    involved in maintaining this package.
+
+  [ Scott Talbert ]
+  * Fix FTBFS with sip 6.5.1 (Closes: #1005637)
+  * Update Standards-Version to 4.6.0 (no changes needed)
+  * Add missing BD on python3-six
+  * Fix a bunch of Python 3.10 issues
+
+ -- Scott Talbert <swt@techie.net>  Wed, 16 Feb 2022 20:23:33 -0500
+
+wxpython4.0 (4.0.7+dfsg-12) unstable; urgency=medium
+
+  * Fix FTBFS with sip 6.3.1 (Closes: #997500)
+
+ -- Scott Talbert <swt@techie.net>  Mon, 25 Oct 2021 20:10:23 -0400
+
+wxpython4.0 (4.0.7+dfsg-11) unstable; urgency=medium
+
+  [ Dmitry Shachnev ]
+  * Add support for building with SIP v6:
+    - Cherry-pick upstream change to remove wrong enum code.
+    - Add sip6.patch to adapt for API changes in SIP v6.
+    - Replace sip5-tools build-dependency with sip-tools.
+
+ -- Scott Talbert <swt@techie.net>  Mon, 16 Aug 2021 18:45:38 -0400
+
+wxpython4.0 (4.0.7+dfsg-10) unstable; urgency=medium
+
+  * Build with sip 5 and build private sip module (Closes: #934925, #966057)
+
+ -- Scott Talbert <swt@techie.net>  Sun, 17 Jan 2021 15:58:38 -0500
+
+wxpython4.0 (4.0.7+dfsg-9) unstable; urgency=medium
+
+  * Fix FTBFS with doxygen 1.9.0 (Closes: #979014)
+
+ -- Scott Talbert <swt@techie.net>  Thu, 07 Jan 2021 22:43:13 -0500
+
+wxpython4.0 (4.0.7+dfsg-8) unstable; urgency=medium
+
+  * Remove BD on python3-requests (not needed)
+  * Update standards version to 4.5.1 (no changes needed)
+
+ -- Scott Talbert <swt@techie.net>  Thu, 31 Dec 2020 15:34:38 -0500
+
+wxpython4.0 (4.0.7+dfsg-7) unstable; urgency=medium
+
+  * Rebuild for Python 3.9 (Closes: #976845)
+  * Backport upstream fix for wxPseudoDC.FindObjects crash (Closes: #977047)
+  * Backport upstream fix for wxCustomDataObject.GetData crash
+
+ -- Scott Talbert <swt@techie.net>  Thu, 10 Dec 2020 23:21:45 -0500
+
+wxpython4.0 (4.0.7+dfsg-6) unstable; urgency=medium
+
+  * Get unittests working again
+  * Backport update of InitLocale() to fix test hangs
+
+ -- Scott Talbert <swt@techie.net>  Wed, 15 Jul 2020 11:12:24 -0400
+
+wxpython4.0 (4.0.7+dfsg-5) unstable; urgency=medium
+
+  * Update debhelper-compat to 13
+  * Add wxpython-tools subpackage to replace python-wxtools from wxpython3.0
+
+ -- Scott Talbert <swt@techie.net>  Mon, 29 Jun 2020 20:08:58 -0400
+
+wxpython4.0 (4.0.7+dfsg-4) unstable; urgency=medium
+
+  * Fix FTBFS with SIP 4.19.23 (Closes: #963283)
+  * Update Standards Version to 4.5.0
+
+ -- Scott Talbert <swt@techie.net>  Sun, 21 Jun 2020 20:47:56 -0400
+
+wxpython4.0 (4.0.7+dfsg-3) unstable; urgency=medium
+
+  * Add missing TreeCtrl SetSpacing / GetSpacing methods
+
+ -- Scott Talbert <swt@techie.net>  Tue, 14 Apr 2020 21:11:48 -0400
+
+wxpython4.0 (4.0.7+dfsg-2) unstable; urgency=medium
+
+  * Fix SyntaxWarnings (Closes: #945052)
+
+ -- Scott Talbert <swt@techie.net>  Sun, 24 Nov 2019 10:25:09 -0500
+
+wxpython4.0 (4.0.7+dfsg-1) unstable; urgency=medium
+
+  * Update to new upstream release 4.0.7
+  * d/patches: remove support-pathlib-and-pathlib2.patch -> no longer needed
+  * d/patches: update unbundle-sip.patch
+  * d/control: Update Standards Version to 4.4.1
+
+ -- Scott Talbert <swt@techie.net>  Tue, 29 Oct 2019 20:42:52 -0400
+
+wxpython4.0 (4.0.6+dfsg-2) unstable; urgency=medium
+
+  * Use debhelper-compat instead of debian/compat
+  * Drop Python 2 subpackages (not used by anything in Debian)
+
+ -- Scott Talbert <swt@techie.net>  Fri, 23 Aug 2019 18:22:31 -0400
+
+wxpython4.0 (4.0.6+dfsg-1) unstable; urgency=medium
+
+  * d/rules: Enable verbose building with waf
+  * d/copyright: Remove more now-unused paragraphs/licenses for removed files
+  * d/patches: Add patch to fix spelling errors in binaries
+  * d/control: Update debhelper compat version to 12
+  * d/upstream/signing-key.asc: Re-export without extra signatures
+  * d/control: Tighten Build-Depends on sip-dev (Closes: #929312)
+  * d/control: Update Standards Version to 4.4.0 (no changes needed)
+  * Update to new upstream release 4.0.6; remove upstream patches
+
+ -- Scott Talbert <swt@techie.net>  Tue, 09 Jul 2019 19:37:03 -0400
+
+wxpython4.0 (4.0.4+dfsg-2) unstable; urgency=medium
+
+  * d/patches: Fix FTBFS with SIP 4.19.14 (Closes: #924856)
+
+ -- Scott Talbert <swt@techie.net>  Mon, 01 Apr 2019 22:41:28 -0400
+
+wxpython4.0 (4.0.4+dfsg-1) unstable; urgency=medium
+
+  * Update d/copyright and d/watch to use uscan repack mechanism vs. repack.sh
+  * New upstream version 4.0.4 (Closes: #919144)
+  * d/patches: remove waf patches (no longer needed)
+  * d/patches: update unbundle-sip patch for new upstream release
+  * d/patches: add patch to fix wxJoystick stubs (Closes: #892237)
+  * d/control: update standards version to 4.3.0 (no changes needed)
+  * d/control: add python[3]-pil as a dependency (required in 4.0.4)
+  * Enable tests during build but for information only (not gating)
+  * d/copyright: remove now-unused paragraphs due to removed files
+
+ -- Scott Talbert <swt@techie.net>  Fri, 25 Jan 2019 18:19:15 -0500
+
+wxpython4.0 (4.0.1+dfsg-6) unstable; urgency=medium
+
+  * d/control: Use sip substitution variables for Depends (Closes: #903595)
+
+ -- Scott Talbert <swt@techie.net>  Thu, 12 Jul 2018 18:20:08 -0400
+
+wxpython4.0 (4.0.1+dfsg-5) unstable; urgency=medium
+
+  * Cherry-pick waf 2.0.7 updates to fix Python 3.7 FTBFS
+  * d/control: Update standards version to 4.1.4 (no changes needed)
+
+ -- Scott Talbert <swt@techie.net>  Tue, 03 Jul 2018 19:47:38 -0400
+
+wxpython4.0 (4.0.1+dfsg-4) unstable; urgency=medium
+
+  * Update team email address due to alioth retirement (Closes: #899942)
+
+ -- Scott Talbert <swt@techie.net>  Tue, 29 May 2018 21:20:05 -0400
+
+wxpython4.0 (4.0.1+dfsg-3) unstable; urgency=medium
+
+  * Work around removal of easy_install binary (Closes: #895516)
+  * Update descriptions and add README.Debian about using Python 2 packages
+    (Closes: #895083)
+
+ -- Scott Talbert <swt@techie.net>  Wed, 09 May 2018 21:19:27 -0400
+
+wxpython4.0 (4.0.1+dfsg-2) unstable; urgency=medium
+
+  * Rebuild against GTK+ 3 build of wxwidgets3.0
+  * Enable build/packaging of wx.html2 (webview) submodule
+  * Update package descriptions to avoid duplicate description warnings
+  * Move standalone license paragraphs to end of copyright file
+
+ -- Scott Talbert <swt@techie.net>  Sat, 24 Mar 2018 23:17:29 -0400
+
+wxpython4.0 (4.0.1+dfsg-1) unstable; urgency=medium
+
+  * Update to upstream version '4.0.1+dfsg'
+  * Remove verbatim copies of GPL/LGPL from copyright file
+  * Fix all shellcheck issues with repack.sh
+  * Enable hardening
+  * Update debian/copyright file
+
+ -- Scott Talbert <swt@techie.net>  Mon, 05 Feb 2018 22:54:25 -0500
+
+wxpython4.0 (4.0.0+dfsg-1) unstable; urgency=medium
+
+  * Initial packaging based on wxpython3.0 (Closes: #888554)
+  * Python 2 version is included to aid developers in porting from wxPython
+    Classic to Phoenix
+
+ -- Scott Talbert <swt@techie.net>  Thu, 01 Feb 2018 22:30:22 -0500
