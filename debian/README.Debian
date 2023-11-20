@@ -1,0 +1,9 @@
+wxPython 4.0 (Phoenix) for Debian
+=================================
+
+The following packages are potentially built from the wxpython4.0 source
+package:
+
+python3-wxgtk4.0	    Python 3 binding to wxGTK
+python3-wxgtk-media4.0	    Python 3 binding to wxGTK media module
+python3-wxgtk-webview4.0    Python 3 binding to wxGTK webview (html2) module
