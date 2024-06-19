@@ -1,0 +1,31 @@
+---
+buildtools/:
+  copyright: wxPython Contributors
+  license: wxWindows
+debian/:
+  copyright: 2018, Scott Talbert
+  license: wxWindows
+demo/:
+  copyright: wxPython Contributors
+  license: wxWindows
+docs/:
+  copyright: wxPython Contributors
+  license: wxWindows
+ext/:
+  copyright: wxWidgets Contributors
+  license: wxWindows
+samples/:
+  copyright: wxPython Contributors
+  license: wxWindows
+src/:
+  copyright: wxPython Contributors
+  license: wxWindows
+unittests/:
+  copyright: wxPython Contributors
+  license: wxWindows
+vagrant/:
+  copyright: wxPython Contributors
+  license: wxWindows
+wx/:
+  copyright: wxPython Contributors
+  license: wxWindows
