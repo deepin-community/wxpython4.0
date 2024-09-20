@@ -1,3 +1,9 @@
+template-repository (1.0-1deepin0) unstable; urgency=medium
+
+  * No source change upload against GCC 12.
+
+ -- Tianyu Chen <sweetyfish@deepin.org>  Fri, 20 Sep 2024 12:58:13 +0800
+
 template-repository (1.0-1) unstable; urgency=medium
 
   * Initial release
