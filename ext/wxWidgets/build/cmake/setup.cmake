@@ -45,6 +45,7 @@ endif()
 if(UNIX)
     wx_setup_definition(wxUSE_UNIX)
     wx_setup_definition(__UNIX__)
+    list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_FILE_OFFSET_BITS=64)
 endif()
 
 if(UNIX AND NOT APPLE)
@@ -81,6 +82,12 @@ if(wxBUILD_SHARED)
     endif()
 endif() # wxBUILD_SHARED
 
+if(MSVC)
+    set(DISABLE_ALL_WARNINGS "/w")
+else()
+    set(DISABLE_ALL_WARNINGS "-w")
+endif()
+
 # wx_check_cxx_source_compiles(<code> <var> [headers...])
 function(wx_check_cxx_source_compiles code res_var)
     set(src)
@@ -95,10 +102,15 @@ function(wx_check_cxx_source_compiles code res_var)
         endif()
     endforeach()
     set(src "${src}\n\nint main(int argc, char* argv[]) {\n ${code}\nreturn 0; }")
+    # We're not interested in any warnings that can arise in the test, which is
+    # especially important if -Werror is globally in effect.
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_FLAGS ${DISABLE_ALL_WARNINGS})
     check_cxx_source_compiles("${src}" ${res_var})
+    cmake_pop_check_state()
 endfunction()
 
-# wx_check_cxx_source_compiles(<code> <var> [headers...])
+# wx_check_c_source_compiles(<code> <var> [headers...])
 function(wx_check_c_source_compiles code res_var)
     set(src)
     foreach(header ${ARGN})
@@ -398,6 +410,10 @@ if(UNIX)
 
     wx_check_funcs(fdopen)
 
+    if(wxBUILD_LARGEFILE_SUPPORT)
+        wx_check_funcs(fseeko)
+    endif()
+
     if(wxUSE_TARSTREAM)
         wx_check_funcs(sysconf)
 
@@ -456,7 +472,7 @@ endif(UNIX)
 
 if(CMAKE_USE_PTHREADS_INIT)
     cmake_push_check_state(RESET)
-    set(CMAKE_REQUIRED_LIBRARIES pthread)
+    set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
     wx_check_cxx_source_compiles("
         void *p;
         pthread_cleanup_push(ThreadCleanupFunc, p);

@@ -65,12 +65,12 @@ if(MSVC OR MINGW OR CYGWIN)
     else()
         set(wxREQUIRED_OS_DESC "Windows Vista / Windows Server 2008")
     endif()
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        wx_string_append(wxREQUIRED_OS_DESC " (x64 Edition)")
+    if(wxPLATFORM_ARCH)
+        wx_string_append(wxREQUIRED_OS_DESC " (${wxPLATFORM_ARCH} Edition)")
     endif()
 elseif(APPLE AND NOT IPHONE)
     if(DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
-        set(wxREQUIRED_OS_DESC "macOS ${CMAKE_OSX_DEPLOYMENT_TARGET}")
+        set(wxREQUIRED_OS_DESC "macOS ${CMAKE_OSX_DEPLOYMENT_TARGET} ${CMAKE_SYSTEM_PROCESSOR}")
     endif()
 endif()
 
@@ -82,7 +82,7 @@ if(wxTOOLKIT_EXTRA)
     set(wxTOOLKIT_DESC "with support for: ${wxTOOLKIT_DESC}")
 endif()
 
-message(STATUS "Configured wxWidgets ${wxVERSION} for ${CMAKE_SYSTEM}
+message(STATUS "Configured wxWidgets ${wxVERSION} for ${CMAKE_SYSTEM_NAME}
     Min OS Version required at runtime:                ${wxREQUIRED_OS_DESC}
     Which GUI toolkit should wxWidgets use?            ${wxBUILD_TOOLKIT} ${wxTOOLKIT_VERSION} ${wxTOOLKIT_DESC}
     Should wxWidgets be compiled into single library?  ${wxBUILD_MONOLITHIC}

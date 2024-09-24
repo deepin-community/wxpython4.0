@@ -28,6 +28,7 @@ import tempfile
 import datetime
 import shlex
 import textwrap
+import warnings
 
 try:
     import pathlib
@@ -46,7 +47,7 @@ from buildtools.config  import Config, msg, opj, posixjoin, loadETG, etg2sip, fi
                                macSetLoaderNames, \
                                getVcsRev, runcmd, textfile_open, getSipFiles, \
                                getVisCVersion, getToolsPlatformName, updateLicenseFiles, \
-                               TemporaryDirectory, getMSVCInfo
+                               TemporaryDirectory, getMSVCInfo, generateVersionFiles
 
 import buildtools.version as version
 
@@ -89,8 +90,8 @@ wxICON = 'packaging/docset/mondrian.png'
 
 # Some tools will be downloaded for the builds. These are the versions and
 # MD5s of the tool binaries currently in use.
-wafCurrentVersion = '2.0.24'
-wafMD5 = '698f382cca34a08323670f34830325c4'
+wafCurrentVersion = '2.1.2'
+wafMD5 = '8ff717c068819e488a337030ec8abf6c'
 
 doxygenCurrentVersion = '1.8.8'
 doxygenMD5 = {
@@ -100,7 +101,7 @@ doxygenMD5 = {
 }
 
 # And the location where they can be downloaded from
-toolsURL = 'https://wxpython.org/Phoenix/tools'
+toolsURL = 'https://wxwidgets.github.io/wxPython-tools'
 
 
 # MS Edge code and DLLs needed for the wxWEBVIEW_BACKEND_EDGE backend
@@ -162,8 +163,9 @@ Usage: ./build.py [command(s)] [options]
 
 
 def main(args):
-    setPythonVersion(args)
     setDevModeOptions(args)
+    options, commands = parseArgs(args)
+    setPythonVersion(args)
 
     os.environ['PYTHONPATH'] = os.environ.get('PYTHONPATH', '') + os.pathsep + phoenixDir()
     os.environ['PYTHONUNBUFFERED'] = 'yes'
@@ -182,8 +184,6 @@ def main(args):
     if not args or 'help' in args or '--help' in args or '-h' in args:
         usage()
         sys.exit(1)
-
-    options, commands = parseArgs(args)
 
     cfg = Config(noWxConfig=True)
     msg('cfg.VERSION: %s' % cfg.VERSION)
@@ -453,6 +453,7 @@ def makeOptionParser():
         ("regenerate_sysconfig", (False, "Waf uses Python's sysconfig and related tools to configure the build. In some cases that info can be incorrect, so this option regenerates it. Must have write access to Python's lib folder.")),
         ("no_allmo",       (False, "Skip regenerating the wxWidgets message catalogs")),
         ("no_msedge",      (False, "Do not include the MS Edge backend for wx.html2.WebView. (Windows only)")),
+        ("quiet",          (False, "Silence some of the messages from build.py"))
         ]
 
     parser = optparse.OptionParser("build options:")
@@ -498,6 +499,10 @@ def parseArgs(args):
 
     if options.gtk2:
         options.gtk3 = False
+
+    if options.quiet:
+        import buildtools.config
+        buildtools.config.runSilently = True
 
     return options, args
 
@@ -794,6 +799,16 @@ def checkCompiler(quiet=False):
         arch = 'x64' if PYTHON_ARCH == '64bit' else 'x86'
         info = getMSVCInfo(PYTHON, arch, set_env=True)
 
+        # # Just needed for debugging
+        # if not quiet:
+        #     msg('MSVCinfo:')
+        #     msg(f'   vc_ver:  {info.vc_ver}')
+        #     msg(f'   vs_ver:  {info.vs_ver}')
+        #     msg(f'   arch:    {info.arch}')
+        #     msg(f'   include: {info.include}')
+        #     msg(f'   lib:     {info.lib}')
+        #     msg(f'   libpath: {info.libpath}')
+
         # Make sure there is now a cl.exe on the PATH
         CL = 'NOT FOUND'
         for d in os.environ['PATH'].split(os.pathsep):
@@ -802,17 +817,16 @@ def checkCompiler(quiet=False):
                 CL = p
                 break
         if not quiet:
-            msg(f"CL.exe: {CL}")
+            msg(f'   CL.exe:  {CL}')
 
-            # Just needed for debugging
-            # msg('include: ' + info.include)
-            # msg('lib:     ' + info.lib)
-            # msg('libpath: ' + info.libpath)
+            # # Just needed for debugging
             # for d in info.include.split(os.pathsep):
             #     p = pathlib.Path(d, 'tchar.h')
             #     if p.exists():
-            #         msg('tchar.h: ' + str(p))
+            #         msg(f'   tchar.h: {p}')
             #         break
+            # else:
+            #     msg('**** tchar.h NOT FOUND!')
 
 
     # NOTE: SIP is now generating code with scoped-enums. Older linux
@@ -1081,6 +1095,10 @@ def cmd_docset(options, args):
     cmd_docset_py(options, args)
 
 
+def cmd_version(options, args):
+    cfg = Config()
+    print(cfg.VERSION)
+
 
 def cmd_etg(options, args):
     cmdTimer = CommandTimer('etg')
@@ -1289,7 +1307,7 @@ def cmd_sip(options, args):
             requires = ["sip >=6.6.2, <7"]
             build-backend = "sipbuild.api"
 
-            [tool.sip.metadata]
+            [project]
             name = "{base}"
 
             [tool.sip.bindings.{base}]
@@ -1403,8 +1421,15 @@ def cmd_sip(options, args):
         tf_name = glob.glob(tmpdir + '/*.tar*')[0]
         tf_dir = os.path.splitext(os.path.splitext(tf_name)[0])[0]
         with tarfile.open(tf_name) as tf:
-            tf.extractall(tmpdir)
+            try:
+                tf.extractall(tmpdir, filter='data')
+            except TypeError:
+                warnings.warn('Falling back to less safe tarfile.extractall')
+                tf.extractall(tmpdir)
         shutil.move(tf_dir, cfg.SIPINC)
+
+    # Copy sip's sip.h for distribution with wxPython's header
+    copyFile('sip/siplib/sip.h', 'wx/include/wxPython', verbose=True)
 
 
 def cmd_touch(options, args):
@@ -1575,18 +1600,20 @@ def cmd_build_wx(options, args):
         sys.exit(1)
 
     if not options.no_allmo:
-        # Build the wx message catalogs, but first check that there is a msgfmt
-        # command available
-        if findCmd('msgfmt') and findCmd('make'):
-            locale_pwd = pushDir(posixjoin(wxDir(), 'locale'))
-            print('Building message catalogs in ' + os.getcwd())
-            runcmd('make allmo')
-            del locale_pwd
-        else:
-            print("WARNING: msgfmt and/or make commands not found, message catalogs not \n"
-                "         rebuilt. Please install gettext and associated tools.")
+        make_allmo()
 
 
+def make_allmo():
+    # Build the wx message catalogs, but first check that there is a msgfmt
+    # command available
+    if findCmd('msgfmt') and findCmd('make'):
+        locale_pwd = pushDir(posixjoin(wxDir(), 'locale'))
+        print('Building message catalogs in ' + os.getcwd())
+        runcmd('make allmo')
+        del locale_pwd
+    else:
+        print("WARNING: msgfmt and/or make commands not found, message catalogs not \n"
+            "         rebuilt. Please install gettext and associated tools.")
 
 def copyWxDlls(options):
     if options.no_magic or options.use_syswx:
@@ -2133,8 +2160,10 @@ def cmd_sdist(options, args):
 
     # Make a place to export everything to
     PDEST = 'build/sdist'
-    if not os.path.exists(PDEST):
-        os.makedirs(PDEST)
+    if os.path.exists(PDEST):
+        shutil.rmtree(PDEST)
+    os.makedirs(PDEST)
+    TMP = os.path.abspath('build')
 
     # and a place to put the final tarball
     if not os.path.exists('dist'):
@@ -2146,7 +2175,11 @@ def cmd_sdist(options, args):
         if not os.path.exists(dest):
             os.path.makedirs(dest)
         pwd = pushDir(root)
-        runcmd('git archive HEAD | tar -x -C %s' % dest, echoCmd=False)
+        #runcmd('git archive HEAD | tar -x -C %s' % dest, echoCmd=False)
+        archive = opj(TMP, 'export.tar')
+        runcmd('git archive --format=tar -o %s HEAD' % archive)
+        runcmd('tar -C %s -xf %s' %(dest, archive))
+        os.unlink(archive)
 
         if os.path.exists('.gitmodules'):
             with open('.gitmodules', 'rt') as fid:
@@ -2158,16 +2191,19 @@ def cmd_sdist(options, args):
 
     _archive_submodules('.', os.path.abspath(PDEST))
 
+    generateVersionFiles(cfg)
+    # copy .py files that need to go into the root wx package dir
+    for name in ['src/__init__.py', 'src/gizmos.py',]:
+        copyFile(name, cfg.PKGDIR, verbose=True)
+
     # copy Phoenix's generated code into the archive tree
     msg('Copying generated files...')
-    os.mkdir(posixjoin(PDEST, 'sip', 'siplib'))
+    os.makedirs(posixjoin(PDEST, 'sip', 'siplib'), exist_ok=True)
     for srcdir in ['cpp', 'gen', 'siplib']:
         destdir = posixjoin(PDEST, 'sip', srcdir)
         for name in glob.glob(posixjoin('sip', srcdir, '*')):
-            try:
+            if not os.path.isdir(name):
                 copyFile(name, destdir)
-            except IsADirectoryError:
-                pass
     sip_h_dir = posixjoin(cfg.PKGDIR, 'include', 'wxPython')
     copyFile(posixjoin(sip_h_dir, 'sip.h'), posixjoin(PDEST, sip_h_dir))
     for wc in ['*.py', '*.pi', '*.pyi']:
@@ -2184,6 +2220,8 @@ def cmd_sdist(options, args):
 
     # Copy the locale message catalogs
     msg('Copying message catalog files...')
+    if not glob.glob(opj(cfg.WXDIR, 'locale', '*.mo')):
+        make_allmo()
     cfg.build_locale_dir(opj(cfg.PKGDIR, 'locale'))
     shutil.copytree(opj(cfg.PKGDIR, 'locale'), opj(PDEST, cfg.PKGDIR, 'locale'))
 
@@ -2224,6 +2262,7 @@ def cmd_sdist(options, args):
 
     msg('Cleaning up...')
     del pwd
+    os.chdir(phoenixDir())
     shutil.rmtree(PDEST)
 
     if options.upload:
