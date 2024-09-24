@@ -140,6 +140,14 @@ function(wx_set_common_target_properties target_name)
             )
         endif()
 
+        if(APPLE)
+            # Xcode automatically adds -Wshorten-64-to-32 to C++ flags
+            # and it causes a lot of warnings in wx code
+            list(APPEND common_gcc_clang_compile_options
+                -Wno-shorten-64-to-32
+            )
+        endif()
+
         if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
             list(APPEND common_gcc_clang_compile_options
                 -Wno-ignored-attributes
@@ -152,12 +160,22 @@ function(wx_set_common_target_properties target_name)
         )
     endif()
 
-    if(CMAKE_USE_PTHREADS_INIT)
-        target_compile_options(${target_name} PRIVATE "-pthread")
-        # clang++.exe: warning: argument unused during compilation: '-pthread' [-Wunused-command-line-argument]
-        if(NOT (WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
-            set_target_properties(${target_name} PROPERTIES LINK_FLAGS "-pthread")
+    if(wxUSE_NO_RTTI)
+        if(MSVC)
+            target_compile_options(${target_name} PRIVATE "/GR-")
+        elseif(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang"))
+            target_compile_options(${target_name} PRIVATE "-fno-rtti")
         endif()
+        target_compile_definitions(${target_name} PRIVATE "-DwxNO_RTTI")
+    endif()
+
+    if(wxBUILD_LARGEFILE_SUPPORT)
+        target_compile_definitions(${target_name} PUBLIC "-D_FILE_OFFSET_BITS=64")
+    endif()
+
+    if(CMAKE_THREAD_LIBS_INIT)
+        target_compile_options(${target_name} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
+        target_link_libraries(${target_name} PUBLIC ${CMAKE_THREAD_LIBS_INIT})
     endif()
     wx_set_source_groups()
 endfunction()
@@ -214,6 +232,12 @@ function(wx_set_target_properties target_name)
     if(wxCOMPILER_PREFIX)
         wx_string_append(dll_suffix "_${wxCOMPILER_PREFIX}")
     endif()
+    # For compatibility with MSVS project files and makefile.vc, use arch
+    # suffix for non-x86 (including x86_64) DLLs.
+    if(MSVC AND wxARCH_SUFFIX)
+        # This one already includes the leading underscore, so don't add another one.
+        wx_string_append(dll_suffix "${wxARCH_SUFFIX}")
+    endif()
     if(wxBUILD_VENDOR)
         wx_string_append(dll_suffix "_${wxBUILD_VENDOR}")
     endif()
@@ -226,6 +250,8 @@ function(wx_set_target_properties target_name)
     set(lib_prefix "lib")
     if(MSVC OR (WIN32 AND wxBUILD_SHARED))
         set(lib_prefix)
+    elseif (CYGWIN AND wxBUILD_SHARED)
+        set(lib_prefix "cyg")
     endif()
 
     # static (and import) library names
@@ -428,10 +454,11 @@ macro(wx_add_library name)
         set_target_properties(${name} PROPERTIES PROJECT_LABEL ${name_short})
 
         # Setup install
-        set(runtime_dir "lib")
-        if(WIN32 AND NOT WIN32_MSVC_NAMING)
+        if(MSYS OR CYGWIN)
             # configure puts the .dll in the bin directory
             set(runtime_dir "bin")
+        else()
+            set(runtime_dir "lib")
         endif()
         wx_install(TARGETS ${name}
             EXPORT wxWidgetsTargets
@@ -567,6 +594,12 @@ endfunction()
 # Add a third party builtin library
 function(wx_add_builtin_library name)
     wx_list_add_prefix(src_list "${wxSOURCE_DIR}/" ${ARGN})
+
+    list(GET src_list 0 src_file)
+    if(NOT EXISTS "${src_file}")
+        message(FATAL_ERROR "${name} file does not exist: \"${src_file}\".\
+        Make sure you checkout the git submodules.")
+    endif()
 
     if(${name} MATCHES "wx.*")
         string(SUBSTRING ${name} 2 -1 name_short)

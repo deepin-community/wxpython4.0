@@ -1,22 +1,13 @@
+/* SPDX-License-Identifier: BSD-2-Clause */
+
 /*
  * SIP library code.
  *
- * Copyright (c) 2023 Riverbank Computing Limited <info@riverbankcomputing.com>
- *
- * This file is part of SIP.
- *
- * This copy of SIP is licensed for use under the terms of the SIP License
- * Agreement.  See the file LICENSE for more details.
- *
- * This copy of SIP may also used under the terms of the GNU General Public
- * License v2 or v3 as published by the Free Software Foundation which can be
- * found in the files LICENSE-GPL2 and LICENSE-GPL3 included in this package.
- *
- * SIP is supplied WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Copyright (c) 2024 Phil Thompson <phil@riverbankcomputing.com>
  */
 
 
+/* Remove when Python v3.12 is no longer supported. */
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <datetime.h>
@@ -31,12 +22,6 @@
 #include "sip.h"
 #include "sipint.h"
 #include "sip_array.h"
-
-
-/* There doesn't seem to be a standard way of checking for C99 support. */
-#if !defined(va_copy)
-#define va_copy(d, s)   ((d) = (s))
-#endif
 
 
 /*
@@ -102,9 +87,7 @@ PyTypeObject sipWrapperType_Type = {
     0,                      /* tp_del */
     0,                      /* tp_version_tag */
     0,                      /* tp_finalize */
-#if PY_VERSION_HEX >= 0x03080000
     0,                      /* tp_vectorcall */
-#endif
 };
 
 
@@ -170,9 +153,7 @@ static sipWrapperType sipWrapper_Type = {
             0,              /* tp_del */
             0,              /* tp_version_tag */
             0,              /* tp_finalize */
-#if PY_VERSION_HEX >= 0x03080000
             0,              /* tp_vectorcall */
-#endif
         },
         {
             0,              /* am_await */
@@ -381,6 +362,7 @@ static sipNewUserTypeFunc sip_api_set_new_user_type_handler(
 static void sip_api_set_type_user_data(sipWrapperType *wt, void *data);
 static void *sip_api_get_type_user_data(const sipWrapperType *wt);
 static PyObject *sip_api_py_type_dict(const PyTypeObject *py_type);
+static PyObject *sip_api_py_type_dict_ref(PyTypeObject *py_type);
 static const char *sip_api_py_type_name(const PyTypeObject *py_type);
 static int sip_api_get_method(PyObject *obj, sipMethodDef *method);
 static PyObject *sip_api_from_method(const sipMethodDef *method);
@@ -620,6 +602,10 @@ static const sipAPIDef sip_api = {
      */
     sip_api_is_py_method_12_8,
     sip_api_next_exception_handler,
+    /*
+     * The following are part of the public API.
+     */
+    sip_api_py_type_dict_ref,
 };
 
 
@@ -781,9 +767,7 @@ static PyTypeObject sipEnumType_Type = {
     0,                      /* tp_del */
     0,                      /* tp_version_tag */
     0,                      /* tp_finalize */
-#if PY_VERSION_HEX >= 0x03080000
     0,                      /* tp_vectorcall */
-#endif
 };
 
 
@@ -2147,7 +2131,7 @@ void *sip_api_malloc(size_t nbytes)
 {
     void *mem;
 
-    if ((mem = PyMem_Malloc(nbytes)) == NULL)
+    if ((mem = PyMem_RawMalloc(nbytes)) == NULL)
         PyErr_NoMemory();
 
     return mem;
@@ -2159,7 +2143,7 @@ void *sip_api_malloc(size_t nbytes)
  */
 void sip_api_free(void *mem)
 {
-    PyMem_Free(mem);
+    PyMem_RawFree(mem);
 }
 
 
@@ -2596,7 +2580,7 @@ static PyObject *buildObject(PyObject *obj, const char *fmt, va_list va)
             break;
 
         case '=':
-            el = PyLong_FromUnsignedLong(va_arg(va, size_t));
+            el = PyLong_FromSize_t(va_arg(va, size_t));
             break;
 
         case 'B':
@@ -3897,7 +3881,7 @@ static int parsePass1(PyObject **parseErrp, sipSimpleWrapper **selfp,
     {
     case '#':
             /* A ctor has an argument with the /Transfer/ annotation. */
-            *selfp = va_arg(va, PyObject *);
+            *selfp = (sipSimpleWrapper *)va_arg(va, PyObject *);
             break;
 
     case 'B':
@@ -5660,6 +5644,8 @@ static int parsePass2(sipSimpleWrapper *self, int selfarg, PyObject *sipArgs,
 
                 if (flags & FMT_AP_TRANSFER_THIS)
                     owner = va_arg(va, PyObject **);
+                else
+                    owner = NULL;
 
                 if (flags & FMT_AP_NO_CONVERTORS)
                 {
@@ -5681,7 +5667,7 @@ static int parsePass2(sipSimpleWrapper *self, int selfarg, PyObject *sipArgs,
                     if (iserr)
                         return FALSE;
 
-                    if (flags & FMT_AP_TRANSFER_THIS && *p != NULL)
+                    if (owner != NULL && *p != NULL)
                         *owner = arg;
                 }
 
@@ -10773,6 +10759,10 @@ static PyObject *slot_richcompare(PyObject *self, PyObject *arg, int op)
     case Py_GE:
         st = ge_slot;
         break;
+
+    default:
+        /* Suppress a compiler warning. */
+        st = -1;
     }
 
     /* It might not exist if not all the above have been implemented. */
@@ -10902,9 +10892,7 @@ sipWrapperType sipSimpleWrapper_Type = {
             0,              /* tp_del */
             0,              /* tp_version_tag */
             0,              /* tp_finalize */
-#if PY_VERSION_HEX >= 0x03080000
             0,              /* tp_vectorcall */
-#endif
         },
         {
             0,              /* am_await */
@@ -12593,11 +12581,34 @@ static void *sip_api_get_type_user_data(const sipWrapperType *wt)
 
 
 /*
- * Get the dict of a Python type (on behalf of the limited API).
+ * Get a borrowed reference to the dict of a Python type (on behalf of the
+ * limited API).  This is deprecated in ABI v12.13 and must not be used with
+ * Python v3.12 and later.
  */
 static PyObject *sip_api_py_type_dict(const PyTypeObject *py_type)
 {
+    PyErr_WarnEx(PyExc_DeprecationWarning,
+            "sipPyTypeDict() is deprecated, the extension module should use "
+            "sipPyTypeDictRef() instead",
+            1);
+
     return py_type->tp_dict;
+}
+
+
+/*
+ * Get a new reference to the dict of a Python type (on behalf of the limited
+ * API).
+ */
+static PyObject *sip_api_py_type_dict_ref(PyTypeObject *py_type)
+{
+#if PY_VERSION_HEX >= 0x030c0000
+    return PyType_GetDict(py_type);
+#else
+    PyObject *ref = py_type->tp_dict;
+    Py_XINCREF(ref);
+    return ref;
+#endif
 }
 
 

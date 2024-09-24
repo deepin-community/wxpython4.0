@@ -90,6 +90,7 @@ Programming Language :: Python :: 3.8
 Programming Language :: Python :: 3.9
 Programming Language :: Python :: 3.10
 Programming Language :: Python :: 3.11
+Programming Language :: Python :: 3.12
 Programming Language :: Python :: Implementation :: CPython
 Topic :: Software Development :: User Interfaces
 """
@@ -364,6 +365,7 @@ if __name__ == '__main__':
           version          = cfg.VERSION,
           description      = DESCRIPTION,
           long_description = LONG_DESCRIPTION,
+          long_description_content_type = 'text/x-rst',
           author           = AUTHOR,
           author_email     = AUTHOR_EMAIL,
           url              = URL,
